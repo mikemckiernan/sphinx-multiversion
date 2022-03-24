@@ -31,12 +31,17 @@ def working_dir(path):
 
 
 def load_sphinx_config_worker(q, confpath, confoverrides, add_defaults):
+    logging.basicConfig(level=logging.DEBUG)
+    logger = logging.getLogger(__name__)
+    logger.debug("  worker reading config: {}".format(confpath))
     try:
         with working_dir(confpath):
             current_config = sphinx_config.Config.read(
                 confpath,
                 confoverrides,
             )
+
+        logger.debug("  worker read config.")
 
         if add_defaults:
             current_config.add(
@@ -71,6 +76,8 @@ def load_sphinx_config_worker(q, confpath, confoverrides, add_defaults):
         current_config.pre_init_values()
         current_config.init_values()
     except Exception as err:
+        logger.debug("Exception in worker:")
+        logger.debug(err)
         q.put(err)
         return
 
@@ -165,6 +172,7 @@ def main(argv=None):
     if args.noconfig:
         return 1
 
+    logging.basicConfig(level=logging.DEBUG)
     logger = logging.getLogger(__name__)
 
     sourcedir_absolute = os.path.abspath(args.sourcedir)
@@ -217,6 +225,7 @@ def main(argv=None):
     else:
         gitrefs = sorted(gitrefs, key=lambda x: (x.is_remote, *x))
 
+    logging.basicConfig(level=logging.DEBUG)
     logger = logging.getLogger(__name__)
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -224,6 +233,11 @@ def main(argv=None):
         metadata = {}
         outputdirs = set()
         for gitref in gitrefs:
+            logger.debug(
+                "Creating a git archive of ref --> commit: {} --> {}".format(
+                    gitref.refname, gitref.commit
+                )
+            )
             # Clone Git repo
             repopath = os.path.join(tmp, gitref.commit)
             try:
@@ -235,6 +249,19 @@ def main(argv=None):
                     repopath,
                 )
                 continue
+            logger.debug(
+                "...archive complete and in repopath: {}".format(repopath)
+            )
+            try:
+                logger.debug("Dir listing of repopath...")
+                logger.debug(
+                    subprocess.check_output(["ls", "-asl", repopath]).decode(
+                        "utf-8"
+                    )
+                )
+            except (subprocess.CalledProcessError) as e:
+                logger.debug("Error:")
+                logger.debug(e)
 
             # Find config
             confpath = os.path.join(repopath, confdir)

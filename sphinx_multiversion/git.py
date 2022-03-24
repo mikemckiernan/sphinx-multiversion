@@ -20,8 +20,7 @@ GitRef = collections.namedtuple(
     ],
 )
 
-level = logging.DEBUG if os.environ.get("DEBUG") else logging.INFO
-logging.basicConfig(level=level)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
@@ -146,8 +145,9 @@ def get_refs(gitroot, config, files=()):
                 ]
                 proc = subprocess.run(cmd, cwd=gitroot, capture_output=True)
                 if 0 != proc.returncode:
-                    logger.info(
-                        "Failed to create a local tracking branch for the override branch"
+                    logger.debug(
+                        """Failed to create a local tracking branch for the override branch.
+                        The tracking branch might already exist if the workspace."""
                     )
                 ref = ref._replace(refname=candidate)
                 ref = ref._replace(commit=override)
@@ -166,7 +166,7 @@ def get_refs(gitroot, config, files=()):
             )
             continue
 
-        logger.debug("Planning to build '%s'", ref.refname)
+        logger.debug("Ref: {} accepted from config.".format(ref.refname))
 
         yield ref
 
