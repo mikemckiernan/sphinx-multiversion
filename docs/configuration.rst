@@ -29,6 +29,9 @@ This is what the default configuration looks like:
     # Determines whether remote or local git branches/tags are preferred if their output dirs conflict
     smv_prefer_remote_refs = False
 
+    # Suffix for branches and tags to use as an override for refs
+    smv_refs_override_suffix = r'-docs'
+
 You can override all of these values inside your :file:`conf.py`.
 
 .. note::
@@ -56,6 +59,19 @@ Here are some examples:
 .. note::
 
     To list values to match, you can use ``git branch``, ``git tag`` and ``git remote``.
+
+
+Overriding the Source for a Tag or Branch
+=========================================
+
+If you specify ``smv_refs_override_suffix`` with a value like ``-docs`` and you
+have a tag with a name like ``v0.1.0`` and branch with a name like ``v0.1.0-docs``,
+you can override and replace the branch data that ``sphinx-multiversion`` copies
+into the temporary directory when it builds the ref.
+
+As long as the original ref like ``v0.1.0`` passes the branch and tag whitelist
+checks, then ``sphinx-multiversion`` makes a copy of the repository from the
+``v0.1.0-docs`` ref when it performs the build rather than ``v0.1.0``.
 
 
 Release Pattern

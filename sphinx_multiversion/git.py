@@ -20,6 +20,8 @@ GitRef = collections.namedtuple(
     ],
 )
 
+level = logging.DEBUG if os.environ.get("DEBUG") else logging.INFO
+logging.basicConfig(level=level)
 logger = logging.getLogger(__name__)
 
 
@@ -69,12 +71,12 @@ def get_all_refs(gitroot):
         yield GitRef(name, commit, source, is_remote, refname, creatordate)
 
 
-def get_refs(
-    gitroot, tag_whitelist, branch_whitelist, remote_whitelist, files=()
-):
+def get_refs(gitroot, config, files=()):
     for ref in get_all_refs(gitroot):
         if ref.source == "tags":
-            if tag_whitelist is None or not re.match(tag_whitelist, ref.name):
+            if config.smv_tag_whitelist is None or not re.match(
+                config.smv_tag_whitelist, ref.name
+            ):
                 logger.debug(
                     "Skipping '%s' because tag '%s' doesn't match the "
                     "whitelist pattern",
@@ -83,8 +85,8 @@ def get_refs(
                 )
                 continue
         elif ref.source == "heads":
-            if branch_whitelist is None or not re.match(
-                branch_whitelist, ref.name
+            if config.smv_branch_whitelist is None or not re.match(
+                config.smv_branch_whitelist, ref.name
             ):
                 logger.debug(
                     "Skipping '%s' because branch '%s' doesn't match the "
@@ -93,9 +95,9 @@ def get_refs(
                     ref.name,
                 )
                 continue
-        elif ref.is_remote and remote_whitelist is not None:
+        elif ref.is_remote and config.smv_remote_whitelist is not None:
             remote_name = ref.source.partition("/")[2]
-            if not re.match(remote_whitelist, remote_name):
+            if not re.match(config.smv_remote_whitelist, remote_name):
                 logger.debug(
                     "Skipping '%s' because remote '%s' doesn't match the "
                     "whitelist pattern",
@@ -103,8 +105,8 @@ def get_refs(
                     remote_name,
                 )
                 continue
-            if branch_whitelist is None or not re.match(
-                branch_whitelist, ref.name
+            if config.smv_branch_whitelist is None or not re.match(
+                config.smv_branch_whitelist, ref.name
             ):
                 logger.debug(
                     "Skipping '%s' because branch '%s' doesn't match the "
@@ -119,6 +121,37 @@ def get_refs(
             )
             continue
 
+        # The ref exists and meets list checks. Check for an override ref.
+        if "" != config.smv_refs_override_suffix:
+            candidate = "{}{}".format(
+                ref.name, config.smv_refs_override_suffix
+            )
+            cmd = ["git", "show-ref", candidate]
+            proc = subprocess.run(cmd, cwd=gitroot, capture_output=True)
+            if 0 == proc.returncode:
+                override = proc.stdout.decode().split()[0]
+                logger.info(
+                    "Overriding the ref from {}:::{}".format(
+                        ref.refname, ref.commit
+                    )
+                )
+                logger.info("   ...to {}:::{}.".format(candidate, override))
+
+                cmd = [
+                    "git",
+                    "branch",
+                    candidate,
+                    "--track",
+                    "origin/{}".format(candidate),
+                ]
+                proc = subprocess.run(cmd, cwd=gitroot, capture_output=True)
+                if 0 != proc.returncode:
+                    logger.info(
+                        "Failed to create a local tracking branch for the override branch"
+                    )
+                ref = ref._replace(refname=candidate)
+                ref = ref._replace(commit=override)
+
         missing_files = [
             filename
             for filename in files
@@ -132,6 +165,8 @@ def get_refs(
                 missing_files,
             )
             continue
+
+        logger.debug("Planning to build '%s'", ref.refname)
 
         yield ref
 

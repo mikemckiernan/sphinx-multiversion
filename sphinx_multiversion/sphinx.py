@@ -210,6 +210,7 @@ def setup(app):
     app.add_config_value(
         "smv_outputdir_format", DEFAULT_OUTPUTDIR_FORMAT, "html"
     )
+    app.add_config_value("smv_refs_override_suffix", "", "html")
     app.connect("config-inited", config_inited)
 
     return {

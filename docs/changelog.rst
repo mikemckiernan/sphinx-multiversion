@@ -4,6 +4,14 @@
 Changelog
 =========
 
+Version 0.3
+===========
+
+Version 0.3.0 (2022-04-12)
+--------------------------
+
+* Add ``smv_refs_override_suffix`` configuration option.
+
 Version 0.2
 ===========
 
