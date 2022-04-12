@@ -67,6 +67,7 @@ def load_sphinx_config_worker(q, confpath, confoverrides, add_defaults):
                 str,
             )
             current_config.add("smv_prefer_remote_refs", False, "html", bool)
+            current_config.add("smv_refs_override_suffix", "", "html", str)
         current_config.pre_init_values()
         current_config.init_values()
     except Exception as err:
@@ -206,9 +207,7 @@ def main(argv=None):
     # Get git references
     gitrefs = git.get_refs(
         str(gitroot),
-        config.smv_tag_whitelist,
-        config.smv_branch_whitelist,
-        config.smv_remote_whitelist,
+        config,
         files=(sourcedir, conffile),
     )
 

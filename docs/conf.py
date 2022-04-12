@@ -4,8 +4,8 @@ import time
 
 author = "Jan Holthuis"
 project = "sphinx-multiversion"
-release = "0.2.4"
-version = "0.2"
+release = "0.3.0"
+version = "0.3"
 copyright = "{}, {}".format(time.strftime("%Y"), author)
 
 html_theme = "alabaster"
