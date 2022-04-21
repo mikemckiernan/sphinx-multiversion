@@ -126,6 +126,7 @@ def get_refs(gitroot, config, files=()):
             candidate = "{}{}".format(
                 ref.name, config.smv_refs_override_suffix
             )
+            logger.debug(f"Checking for a candidate override branch: {candidate}")
             cmd = ["git", "show-ref", candidate]
             proc = subprocess.run(cmd, cwd=gitroot, capture_output=True)
             if 0 == proc.returncode:
