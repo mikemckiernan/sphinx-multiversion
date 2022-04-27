@@ -126,7 +126,6 @@ def get_refs(gitroot, config, files=()):
             candidate = "{}{}".format(
                 ref.name, config.smv_refs_override_suffix
             )
-            logger.debug(f"Checking for a candidate override branch: {candidate}")
             cmd = ["git", "show-ref", candidate]
             proc = subprocess.run(cmd, cwd=gitroot, capture_output=True)
             if 0 == proc.returncode:
@@ -146,9 +145,13 @@ def get_refs(gitroot, config, files=()):
                     "origin/{}".format(candidate),
                 ]
                 proc = subprocess.run(cmd, cwd=gitroot, capture_output=True)
-                if 0 != proc.returncode:
+                if 0 != proc.returncode and -1 == proc.stderr.decode().find(
+                    "already exists"
+                ):
                     logger.info(
-                        "Failed to create a local tracking branch for the override branch"
+                        "Failed to create a local tracking branch for the override branch: {}".format(
+                            proc.stderr.decode()
+                        )
                     )
                 ref = ref._replace(refname=candidate)
                 ref = ref._replace(commit=override)
